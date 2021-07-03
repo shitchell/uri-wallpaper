@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# helpful vars
-URI="http://wwc.instacam.com/instacamimg/STNMN/STNMN_l.jpg"
+# keep the original as well as the blurry version
 FILEPATH_ORIGINAL="/tmp/uri-wallpaper.orig.jpg"
 FILEPATH_MODIFIED="/tmp/uri-wallpaper.jpg"
 
 # helpful functions
 ##
-
 help-usage() {
-    echo "usage: $(basename "$0") [-qh] [-b blur] [url]"
+    echo "usage: $(basename "$0") [-qh] [-b blur] url"
 }
 
 help-epilogue() {
@@ -101,14 +99,21 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# require a URI
+if [ -z "$URI" ]; then
+    echo 'error: no url provided' >&2
+    help-usage
+    exit 1
+fi
+
 # determine download command
-# must happen *after* arguments are parsed in case a url is given
-if command -v wget >/dev/null 2>&1; then
+# (must happen *after* arguments are parsed in case a url is given)
+if command -v wedt >/dev/null 2>&1; then
     DOWNLOAD_CMD="wget $URI -O $FILEPATH_ORIGINAL"
 elif command -v curl >/dev/null 2>&1; then
     DOWNLOAD_CMD="curl $URI -o $FILEPATH_ORIGINAL"
 else
-    echo 'could not find wget or curl' 1>&2
+    echo 'error: could not find wget or curl' 1>&2
     exit 1
 fi
 
@@ -119,13 +124,24 @@ echo-managed 3 download saved to "'$FILEPATH_ORIGINAL'"
 
 # blur image
 if [ "$BLUR" -ne 0 ]; then
-    echo-managed 2 imagemagick adding blur with sigma=$BLUR
-    convert -blur 0x$BLUR "$FILEPATH_ORIGINAL" "$FILEPATH_MODIFIED"
-    echo-managed 3 imagemagick modified file at "'$FILEPATH_MODIFIED'"
+    ## check for imagemagick
+    if ! command -v convert >/dev/null 2>&1; then
+        echo-managed 3 error imagemagick not installed. cannot add blur to image >&2
+        # use original image
+        FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
+    else
+        echo-managed 2 imagemagick adding blur with sigma=$BLUR
+        convert -blur 0x$BLUR "$FILEPATH_ORIGINAL" "$FILEPATH_MODIFIED"
+        echo-managed 3 imagemagick modified file at "'$FILEPATH_MODIFIED'"
+    fi
 else
-    cp "$FILEPATH_ORIGINAL" "$FILEPATH_MODIFIED"
+    # if we're not blurrifying the image, just use the original
+    FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
 fi
 
+# TODO: support changing the bg for different desktop managers
+
 # set image as desktop background
-echo-managed 1 gsettings setting as desktop background
+echo-managed 1 gsettings changing desktop background
 gsettings set org.cinnamon.desktop.background picture-uri "file://$FILEPATH_MODIFIED"
+echo-managed 3 gsettings desktop wallpaper set to $(gsettings get org.cinnamon.desktop.background picture-uri)
