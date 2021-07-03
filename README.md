@@ -48,7 +48,7 @@ silence all output with `-q` or increase verbosity with one or more uses of `-v`
 https://user-images.githubusercontent.com/621412/124342949-edbb0980-db95-11eb-95e0-4a393b007efb.mp4
 
 ## cron
-in order to use `uri-wallpaper` in a crontab, you'll need to find a way to access the current dbus session. there's a couple of ways to do this, but i'll simply explain how i have it set up:
+in order to use `uri-wallpaper` in a crontab, you'll need to find a way to access the current dbus session. there's a couple of ways to do this, but i'll simply explain how i have it set up (based on [this stackoverflow answer](https://stackoverflow.com/a/54075726))
 
 ### save your env
 edit your `~/.xinitrc` file to store your environment variables each time you login by adding this line to the bottom:
