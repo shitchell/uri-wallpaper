@@ -143,5 +143,5 @@ fi
 
 # set image as desktop background
 echo-managed 1 gsettings changing desktop background
-gsettings set org.cinnamon.desktop.background picture-uri "file://$FILEPATH_MODIFIED"
+dconf write /org/cinnamon/desktop/background/picture-uri "'file://$FILEPATH_MODIFIED'"
 echo-managed 3 gsettings desktop wallpaper set to $(gsettings get org.cinnamon.desktop.background picture-uri)
