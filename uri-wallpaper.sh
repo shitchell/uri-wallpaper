@@ -7,7 +7,7 @@ FILEPATH_MODIFIED="/tmp/uri-wallpaper.jpg"
 # helpful functions
 ##
 help-usage() {
-    echo "usage: $(basename "$0") [-qh] [-b blur] url"
+    echo "usage: $(basename "$0") [-qh] [-b blur] [-c options] url"
 }
 
 help-epilogue() {
@@ -22,6 +22,7 @@ help() {
     -h/--help       show help info
     -b/--blur       set the sigma for the image blur. higher values increase the
                     fuzziness. 0 = no blur. defaults to 12
+    -c/--convert    custom options to pass to the convert command
     -q/--quiet      hide all output
     -v/--verbose    show more output
 EOF
@@ -82,6 +83,11 @@ while [[ $# -gt 0 ]]; do
             shift # past argument
             shift # past value
             ;;
+        -c|--convert)
+            CONVERT_OPTS="$2"
+            shift # past argument
+            shift # past value
+            ;;
         -v|--verbose)   
             let VERBOSITY++
             shift # past argument
@@ -101,19 +107,19 @@ done
 
 # require a URI
 if [ -z "$URI" ]; then
-    echo 'error: no url provided' >&2
+    echo-managed 0 error no url provided 1>&2
     help-usage
     exit 1
 fi
 
 # determine download command
 # (must happen *after* arguments are parsed in case a url is given)
-if command -v wedt >/dev/null 2>&1; then
+if command -v wget >/dev/null 2>&1; then
     DOWNLOAD_CMD="wget $URI -O $FILEPATH_ORIGINAL"
 elif command -v curl >/dev/null 2>&1; then
     DOWNLOAD_CMD="curl $URI -o $FILEPATH_ORIGINAL"
 else
-    echo 'error: could not find wget or curl' 1>&2
+    echo-managed 0 error could not find wget or curl 1>&2
     exit 1
 fi
 
@@ -122,26 +128,22 @@ echo-managed 1 download $URI
 $DOWNLOAD_CMD >/dev/null 2>&1
 echo-managed 3 download saved to "'$FILEPATH_ORIGINAL'"
 
-# blur image
-if [ "$BLUR" -ne 0 ]; then
-    ## check for imagemagick
-    if ! command -v convert >/dev/null 2>&1; then
-        echo-managed 3 error imagemagick not installed. cannot add blur to image >&2
-        # use original image
-        FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
-    else
-        echo-managed 2 imagemagick adding blur with sigma=$BLUR
-        convert -blur 0x$BLUR "$FILEPATH_ORIGINAL" "$FILEPATH_MODIFIED"
-        echo-managed 3 imagemagick modified file at "'$FILEPATH_MODIFIED'"
-    fi
-else
-    # if we're not blurrifying the image, just use the original
+# modify image
+## check for imagemagick
+if ! command -v convert >/dev/null 2>&1; then
+    echo-managed 3 error imagemagick not installed. cannot add blur to image >&2
+    # use original image
     FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
+else
+    echo-managed 1 imagemagick editing image
+    echo-managed 4 imagemagick "using options '-blur 0x$BLUR $CONVERT_OPTS'"
+    convert "$FILEPATH_ORIGINAL" -blur 0x$BLUR $CONVERT_OPTS "$FILEPATH_MODIFIED"
+    echo-managed 3 imagemagick modified file at "'$FILEPATH_MODIFIED'"
 fi
 
 # TODO: support changing the bg for different desktop managers
 
 # set image as desktop background
-echo-managed 1 gsettings changing desktop background
-gsettings set org.cinnamon.desktop.background picture-uri "file://$FILEPATH_MODIFIED"
-echo-managed 3 gsettings desktop wallpaper set to $(gsettings get org.cinnamon.desktop.background picture-uri)
+echo-managed 1 dconf changing desktop background
+dconf write /org/cinnamon/desktop/background/picture-uri "'file://$FILEPATH_MODIFIED'"
+echo-managed 3 dconf desktop wallpaper set to $(gsettings get org.cinnamon.desktop.background picture-uri)
