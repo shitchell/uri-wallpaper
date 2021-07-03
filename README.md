@@ -14,8 +14,8 @@ set wallpaper from image url with optional blur
 ```
 
 *example*
-```shell
-$ uri-wallpaper.sh https://i.imgur.com/UmqkrGt.jpg
+```sh
+$ uri-wallpaper.sh "https://i.imgur.com/UmqkrGt.jpg"
 ```
 
 ## options
@@ -31,7 +31,7 @@ by default, a blur is added to the specified image. this is done with the imagem
 you can specify custom options to pass to the `convert` command using the `--convert` option. e.g.: to create a black & white version of the image, you could run
 
 ```bash
-uri-wallpaper -c '-colorspace gray' https://i.imgur.com/UmqkrGt.jpg
+uri-wallpaper -c "-colorspace gray" "https://i.imgur.com/UmqkrGt.jpg"
 ```
 
 ### verbosity
@@ -54,15 +54,15 @@ in order to use `uri-wallpaper` in a crontab, you'll need to find a way to acces
 edit your `~/.xinitrc` file to store your environment variables each time you login by adding this line to the bottom:
 
 **~/.xinitrc**
-```bash
+```sh
 env | grep -v '%s' > ~/.Xenv
 ```
 
 ### load your env
 in your crontab, load the saved env file before running the `uri-wallpaper` command
 
-```bash
-*/30 * * * * env $(cat ~/.Xenv | xargs) /path/to/uri-wallpaper -q -b 15 http://internet.com/wallpaper.png
+```sh
+*/30 * * * * env $(cat ~/.Xenv | xargs) /path/to/uri-wallpaper -q -b 15 "http://internet.com/wallpaper.png"
 ```
 
 ## limitations
