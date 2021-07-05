@@ -62,7 +62,6 @@ echo-managed() {
 VERBOSITY=2
 BLUR=12
 
-POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     key="$1"
 
