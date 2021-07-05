@@ -124,25 +124,29 @@ fi
 
 # download image
 echo-managed 1 download $URI
+echo-managed 4 download "> $DOWNLOAD_CMD"
 $DOWNLOAD_CMD >/dev/null 2>&1
 echo-managed 3 download saved to "'$FILEPATH_ORIGINAL'"
 
 # modify image
-## check for imagemagick
-if ! command -v convert >/dev/null 2>&1; then
-    echo-managed 3 error imagemagick not installed. cannot add blur to image >&2
-    # use original image
-    FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
-else
-    echo-managed 1 imagemagick editing image
-    echo-managed 4 imagemagick "using options '-blur 0x$BLUR $CONVERT_OPTS'"
-    convert "$FILEPATH_ORIGINAL" -blur 0x$BLUR $CONVERT_OPTS "$FILEPATH_MODIFIED"
-    echo-managed 3 imagemagick modified file at "'$FILEPATH_MODIFIED'"
+if [ "$BLUR" -ge 0 ] || [ -n "$CONVERT_OPTS" ]; then
+    # check for imagemagick
+    if ! command -v convert >/dev/null 2>&1; then
+        echo-managed 3 error imagemagick not installed. cannot modify >&2
+        # use original image
+        FILEPATH_MODIFIED="$FILEPATH_ORIGINAL"
+    else
+        echo-managed 1 imagemagick editing image
+        echo-managed 4 imagemagick "> convert '$FILEPATH_ORIGINAL' -blur 0x$BLUR $CONVERT_OPTS '$FILEPATH_MODIFIED'"
+        convert "$FILEPATH_ORIGINAL" -blur 0x$BLUR $CONVERT_OPTS "$FILEPATH_MODIFIED"
+        echo-managed 3 imagemagick modified file: $FILEPATH_MODIFIED
+    fi
 fi
 
 # TODO: support changing the bg for different desktop managers
 
 # set image as desktop background
 echo-managed 1 dconf changing desktop background
+echo-managed 4 dconf "> dconf write /org/cinnamon/desktop/background/picture-uri 'file://$FILEPATH_MODIFIED'"
 dconf write /org/cinnamon/desktop/background/picture-uri "'file://$FILEPATH_MODIFIED'"
-echo-managed 3 dconf desktop wallpaper set to $(gsettings get org.cinnamon.desktop.background picture-uri)
+echo-managed 3 dconf desktop wallpaper set to $(dconf read /org/cinnamon/desktop/background/picture-uri)
